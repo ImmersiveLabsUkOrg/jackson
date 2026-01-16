@@ -2,8 +2,7 @@ name: Create ECR Image
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches: ["main"]
+  pull_request:
 
 env:
   ORIGIN_REPO: "jackson"
@@ -34,11 +33,23 @@ jobs:
         with:
           registries: ${{ env.ORIGIN_ID }}
 
-      - name: Build, tag, and push image to Amazon ECR
+      - name: Build image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ env.ORIGIN_REPO }}
           IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:main .
-          docker image push --all-tags $ECR_REGISTRY/$ECR_REPOSITORY
+        run: docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+
+      - name: Tag as main (requires manual run)
+        if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main'
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ORIGIN_REPO }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:main
+
+      - name: Push images
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ORIGIN_REPO }}
+        run: docker image push --all-tags $ECR_REGISTRY/$ECR_REPOSITORY
