@@ -112,12 +112,9 @@ module.exports = withBundleAnalyzer({
     ];
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '*',
-      },
-    ],
+    // Disable the /_next/image optimiser so unauthenticated clients can't make us fetch and decode
+    // arbitrary remote images (TEC-5155). next/image renders a plain <img> instead.
+    unoptimized: true,
   },
   async headers() {
     return [
